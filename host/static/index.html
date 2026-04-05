@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpeechMate Admin</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SpeechMate Admin</h1>
+            <p class="subtitle">Configure your GLM API key for voice recognition</p>
+        </header>
+
+        <main>
+            <section class="config-section">
+                <h2>API Configuration</h2>
+
+                <div class="current-key">
+                    <label>Current API Key:</label>
+                    <div class="key-display">
+                        <span id="currentKey">Loading...</span>
+                    </div>
+                </div>
+
+                <form id="configForm">
+                    <div class="form-group">
+                        <label for="newApiKey">New API Key:</label>
+                        <input type="password" id="newApiKey" name="apiKey" placeholder="Enter your GLM API key" autocomplete="off">
+                        <button type="button" id="toggleVisibility" class="toggle-btn">Show</button>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" id="saveBtn" class="btn-primary">Save</button>
+                    </div>
+                </form>
+
+                <div id="message" class="message hidden"></div>
+
+                <div class="help-section">
+                    <h3>Need an API Key?</h3>
+                    <p>Get your API key from the GLM platform:</p>
+                    <a href="https://open.bigmodel.cn/" target="_blank" rel="noopener noreferrer" class="btn-link">
+                        GLM Platform (open.bigmodel.cn)
+                        <span class="external-icon">&#x2197;</span>
+                    </a>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>SpeechMate Host Server</p>
+        </footer>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
