@@ -4,6 +4,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication
 from client.tray import TrayIcon
+from client.hotkey import HotkeyListener
 
 
 def main():
@@ -18,7 +19,17 @@ def main():
     tray.show()
     tray.exit_requested.connect(app.quit)
 
-    # TODO: Initialize hotkey listener
+    # Initialize hotkey listener
+    hotkey_listener = HotkeyListener()
+    hotkey_listener.start()
+
+    # Connect hotkey signals to tray icon recording state
+    hotkey_listener.hotkey_pressed.connect(lambda: tray.set_recording(True))
+    hotkey_listener.hotkey_released.connect(lambda: tray.set_recording(False))
+
+    # Ensure hotkey listener stops on app exit
+    app.aboutToQuit.connect(hotkey_listener.stop)
+
     # TODO: Initialize audio recorder
 
     return app.exec_()
