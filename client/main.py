@@ -9,6 +9,11 @@ A PyQt5 desktop application that:
 """
 
 import sys
+import os
+
+# Add parent directory to path for imports when running directly
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt
 from client.tray import TrayIcon

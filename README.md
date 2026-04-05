@@ -48,6 +48,10 @@ pip install -r requirements.txt
 
 **启动 Host Server:**
 ```bash
+# 方法1: 使用启动脚本
+./run_host.sh
+
+# 方法2: 手动启动
 cd host
 uvicorn main:app --host 127.0.0.1 --port 8000
 
@@ -57,8 +61,11 @@ uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 
 **启动 Client:**
 ```bash
-cd client
-python main.py
+# 从项目根目录运行
+python -m client.main
+
+# 或者使用启动脚本
+./run_client.sh
 ```
 
 ### 5. 使用
