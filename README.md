@@ -49,7 +49,10 @@ pip install -r requirements.txt
 **启动 Host Server:**
 ```bash
 cd host
-python main.py
+uvicorn main:app --host 127.0.0.1 --port 8000
+
+# 开发模式（代码修改后自动重启）
+uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 **启动 Client:**

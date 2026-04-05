@@ -72,6 +72,28 @@ http://127.0.0.1:8000/admin
 
 ## 故障排除
 
+### 代码修改后页面显示 "Not Found"
+
+**症状:** 修改代码后访问页面显示 `{"detail":"Not Found"}`
+
+**原因:** 服务器正在运行旧版本的代码
+
+**解决方案:**
+
+重启 Host Server 以加载最新代码：
+
+```bash
+# 方法1: 停止并重启
+# 先按 Ctrl+C 停止当前服务器，然后重新启动
+cd host
+uvicorn main:app --host 127.0.0.1 --port 8000
+
+# 方法2: 开发模式（推荐）
+# 使用 --reload 参数，代码修改后自动重启
+cd host
+uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+```
+
 ### 无法连接到服务器
 
 **症状:** 托盘显示 "Cannot connect to server"
