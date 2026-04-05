@@ -3,6 +3,7 @@
 
 import sys
 from PyQt5.QtWidgets import QApplication
+from client.tray import TrayIcon
 
 
 def main():
@@ -12,7 +13,11 @@ def main():
     app.setApplicationVersion("0.1.0")
     app.setQuitOnLastWindowClosed(False)
 
-    # TODO: Initialize system tray icon
+    # Initialize system tray icon
+    tray = TrayIcon()
+    tray.show()
+    tray.exit_requested.connect(app.quit)
+
     # TODO: Initialize hotkey listener
     # TODO: Initialize audio recorder
 
