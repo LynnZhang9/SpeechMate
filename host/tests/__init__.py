@@ -1,0 +1,1 @@
+"""SpeechMate Host tests"""
