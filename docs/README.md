@@ -154,13 +154,18 @@ uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 
 ### macOS 权限问题
 
-**症状:** macOS 上麦克风或快捷键不工作
+**症状:** macOS 上麦克风或快捷键不工作，或提示 `This process is not trusted!`
 
 **解决方案:**
-1. 打开"系统偏好设置" > "安全性与隐私" > "隐私"
-2. 在"麦克风"中添加终端或 Python
-3. 在"辅助功能"中添加终端或 Python
-4. 重启 SpeechMate
+
+1. 打开 **系统设置** > **隐私与安全性** > **辅助功能**
+2. 点击左下角 🔒 锁图标并输入密码解锁
+3. 点击 **+** 按钮或找到列表中的 **终端**（Terminal）
+4. 如果没有，点击 **+** 浏览 `/Applications/Utilities/Terminal.app` 添加
+5. 勾选终端旁边的复选框
+6. **重启终端** 并重新运行 SpeechMate Client
+
+**注意:** macOS Ventura 及更新版本使用"系统设置"，旧版本使用"系统偏好设置"
 
 ### Windows 权限问题
 
