@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import os
+from api.config import router as config_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -18,6 +19,9 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan
 )
+
+# Include API routers
+app.include_router(config_router)
 
 # Mount static files for Web Admin
 static_dir = os.path.join(os.path.dirname(__file__), "static")
