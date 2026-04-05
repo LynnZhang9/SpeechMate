@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import os
 from api.config import router as config_router
+from api.speech import router as speech_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -22,6 +23,7 @@ app = FastAPI(
 
 # Include API routers
 app.include_router(config_router)
+app.include_router(speech_router)
 
 # Mount static files for Web Admin
 static_dir = os.path.join(os.path.dirname(__file__), "static")
