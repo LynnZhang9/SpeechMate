@@ -2,50 +2,57 @@
 
 ## 快捷键
 
-### F8 - 录音
+### Cmd+Shift+R - 录音
 
 | 操作 | 说明 |
 |------|------|
-| 按住 F8 | 开始录音（托盘图标变为录音状态） |
-| 松开 F8 | 停止录音，发送到服务器识别 |
+| 按住 Cmd+Shift+R | 开始录音（浮动面板变为红色） |
+| 松开 Cmd+Shift+R | 停止录音，发送到服务器识别 |
 
 **工作流程:**
-1. 按住 F8 键
+1. 按住 Cmd+Shift+R 键
 2. 对着麦克风说话
-3. 松开 F8 键
+3. 松开 Cmd+Shift+R 键
 4. 等待识别完成
 5. 识别的文字自动粘贴到当前光标位置
 
-## 系统托盘
+## 浮动面板
 
-SpeechMate 启动后会在系统托盘显示图标。
+SpeechMate 启动后会在屏幕右上角显示浮动面板。
 
-### 托盘图标状态
+### 面板状态
 
-| 状态 | 说明 |
-|------|------|
-| 正常图标 | 程序就绪，可以录音 |
-| 录音图标 | 正在录音中 |
+| 状态 | 颜色 | 说明 |
+|------|------|------|
+| 就绪 | 蓝色 | 程序就绪，可以录音 |
+| 录音 | 红色 | 正在录音中 |
+| 处理 | 橙色 | 正在识别音频 |
 
-### 托盘菜单
+### 面板交互
 
-右键点击托盘图标可看到以下选项:
+- **点击面板** - 显示菜单
+- **拖动面板** - 移动位置
 
-- **关于** - 显示程序信息
+### 面板菜单
+
+点击面板可看到以下选项:
+
+- **打开设置** - 打开 Web Admin 配置页面
+- **状态: 就绪/录音中/处理中** - 当前状态（不可点击）
 - **退出** - 关闭程序
 
-### 托盘通知
+### 通知消息
 
-托盘图标会显示以下通知:
+浮动面板会显示以下通知:
 
 | 通知 | 说明 |
 |------|------|
-| "Ready! Hold F8 to record." | 程序启动成功 |
+| "Ready" | 程序启动成功 |
 | "Processing..." | 正在识别音频 |
 | "Pasted: xxx" | 识别完成并已粘贴 |
 | "No audio recorded" | 没有录到音频 |
 | "No speech detected" | 没有检测到语音 |
-| "Cannot connect to server..." | 无法连接到服务器 |
+| "Error: ..." | 发生错误 |
 
 ## Web Admin
 
@@ -54,7 +61,7 @@ Web Admin 是一个网页界面，用于配置 GLM API Key。
 ### 访问地址
 
 ```
-http://127.0.0.1:8000/admin
+http://127.0.0.1:8001/admin
 ```
 
 ### 配置 API Key
@@ -86,26 +93,27 @@ http://127.0.0.1:8000/admin
 # 方法1: 停止并重启
 # 先按 Ctrl+C 停止当前服务器，然后重新启动
 cd host
-uvicorn main:app --host 127.0.0.1 --port 8000
+uvicorn main:app --host 127.0.0.1 --port 8001
 
 # 方法2: 开发模式（推荐）
 # 使用 --reload 参数，代码修改后自动重启
 cd host
-uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+uvicorn main:app --host 127.0.0.1 --port 8001 --reload
 ```
 
 ### 无法连接到服务器
 
-**症状:** 托盘显示 "Cannot connect to server"
+**症状:** 显示 "Network error - server unreachable"
 
 **解决方案:**
 1. 确保 Host Server 正在运行:
    ```bash
    cd host
-   python main.py
+   python -m uvicorn main:app --host 127.0.0.1 --port 8001
    ```
-2. 检查端口 8000 是否被占用
+2. 检查端口 8001 是否被占用
 3. 确认防火墙没有阻止本地连接
+4. 如果你使用了系统代理，SpeechMate 已配置为自动绕过代理
 
 ### API Key 无效
 
@@ -136,12 +144,13 @@ uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 
 ### 快捷键不工作
 
-**症状:** 按 F8 没有反应
+**症状:** 按 Cmd+Shift+R 没有反应
 
 **解决方案:**
 1. 确保 SpeechMate Client 正在运行
-2. 检查是否有其他程序占用了 F8 键
+2. 检查是否有其他程序占用了该快捷键
 3. 尝试重启 SpeechMate Client
+4. 确认已授予辅助功能权限（macOS）
 
 ### 自动粘贴不工作
 
@@ -164,6 +173,10 @@ uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 4. 如果没有，点击 **+** 浏览 `/Applications/Utilities/Terminal.app` 添加
 5. 勾选终端旁边的复选框
 6. **重启终端** 并重新运行 SpeechMate Client
+
+**麦克风权限:**
+1. 打开 **系统设置** > **隐私与安全性** > **麦克风**
+2. 确保终端已被允许访问麦克风
 
 **注意:** macOS Ventura 及更新版本使用"系统设置"，旧版本使用"系统偏好设置"
 
@@ -191,8 +204,25 @@ uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 如需查看详细日志，可在终端中运行程序:
 
 ```bash
-cd client
-python main.py
+python -m client.main
 ```
 
 终端会显示程序运行日志，包括错误信息。
+
+## 端口说明
+
+SpeechMate 使用以下端口：
+
+| 端口 | 用途 |
+|------|------|
+| 8001 | Host Server API 服务 |
+
+如果端口被占用，可以在启动时指定其他端口：
+
+```bash
+# Host Server
+cd host
+uvicorn main:app --host 127.0.0.1 --port 8002
+
+# 同时需要修改 client/api_client.py 中的 DEFAULT_HOST
+```

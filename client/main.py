@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt
-from client.tray import TrayIcon
+from client.floating_panel import create_tray_icon
 from client.hotkey import HotkeyListener
 from client.recorder import AudioRecorder
 from client.api_client import SpeechMateClient
@@ -28,7 +28,7 @@ class SpeechMateApp:
 
     Coordinates all components:
     - TrayIcon: System tray UI
-    - HotkeyListener: Global F8 hotkey detection
+    - HotkeyListener: Global Cmd+Shift+R hotkey detection
     - AudioRecorder: Microphone recording
     - SpeechMateClient: API communication
     - ClipboardManager: Text pasting
@@ -46,8 +46,8 @@ class SpeechMateApp:
         self._client = SpeechMateClient()
         self._clipboard = ClipboardManager()
         self._recorder = AudioRecorder()
-        self._tray = TrayIcon()
-        self._hotkey_listener = HotkeyListener()
+        self._tray = create_tray_icon()
+        self._hotkey_listener = HotkeyListener("cmd+shift+r")
 
         # Track if we're waiting for a transcription
         self._processing = False
@@ -77,27 +77,30 @@ class SpeechMateApp:
         Returns:
             Exit code from the application.
         """
-        # Check server health
-        if not self._check_server_health():
-            self._tray.show()
-            self._tray.show_message(
-                "SpeechMate",
-                "Cannot connect to server. Please start the SpeechMate Host Server.",
-                icon=self._tray.Warning,
-                msecs=5000
-            )
-        else:
-            self._tray.show()
-            self._tray.show_message(
-                "SpeechMate",
-                "Ready! Hold F8 to record.",
-                msecs=2000
-            )
+        try:
+            # Check server health
+            if not self._check_server_health():
+                self._tray.show()
+                self._tray.show_message(
+                    "SpeechMate",
+                    "Cannot connect to server. Please start the SpeechMate Host Server.",
+                    msecs=5000
+                )
+            else:
+                self._tray.show()
+                self._tray.show_message(
+                    "SpeechMate",
+                    "Ready! Hold F8 to record.",
+                    msecs=2000
+                )
 
-        # Start hotkey listener
-        self._hotkey_listener.start()
+            # Start hotkey listener
+            self._hotkey_listener.start()
 
-        return self._app.exec_()
+            return self._app.exec_()
+        except Exception as e:
+            print(f"Error starting application: {e}")
+            return 1
 
     def _check_server_health(self) -> bool:
         """Check if the server is healthy.
@@ -109,21 +112,27 @@ class SpeechMateApp:
 
     def _on_hotkey_pressed(self):
         """Handle F8 press - start recording."""
+        print("[DEBUG] _on_hotkey_pressed called")
         if self._processing:
             # Ignore if already processing a recording
+            print("[DEBUG] Ignoring hotkey - already processing")
             return
 
+        print("[DEBUG] Starting recording...")
         self._recorder.start_recording()
 
     def _on_hotkey_released(self):
         """Handle F8 release - stop recording and process."""
+        print("[DEBUG] _on_hotkey_released called")
         if self._processing:
             return
 
+        print("[DEBUG] Stopping recording...")
         self._recorder.stop_recording()
 
     def _on_recording_started(self):
         """Handle recording started event."""
+        print("[DEBUG] _on_recording_started called")
         self._tray.set_recording(True)
 
     def _on_recording_stopped(self, audio_bytes: bytes):

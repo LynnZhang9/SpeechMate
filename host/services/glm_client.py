@@ -49,15 +49,32 @@ class GLMClient:
             "file": ("audio.wav", audio_data, "audio/wav")
         }
         data = {
-            "model": "whisper-1"
+            "model": "glm-asr"  # 智谱 ASR 模型
         }
 
-        response = await self.client.post(url, headers=headers, files=files, data=data)
+        print(f"[DEBUG] GLM API call: {url}, audio size: {len(audio_data)} bytes")
+
+        try:
+            response = await self.client.post(url, headers=headers, files=files, data=data)
+            print(f"[DEBUG] GLM API response: {response.status_code}")
+        except httpx.RemoteProtocolError as e:
+            print(f"[DEBUG] RemoteProtocolError: {e}")
+            raise RuntimeError(f"GLM API connection error: {e}")
+        except httpx.ConnectError as e:
+            print(f"[DEBUG] ConnectError: {e}")
+            raise RuntimeError(f"Cannot connect to GLM API: {e}")
+        except Exception as e:
+            print(f"[DEBUG] Unexpected error: {type(e).__name__}: {e}")
+            raise
 
         if response.status_code == 401:
             raise ValueError("API key is invalid or expired")
         elif response.status_code != 200:
-            error_msg = response.json().get("error", {}).get("message", "Unknown error")
+            try:
+                error_data = response.json()
+                error_msg = error_data.get("error", {}).get("message", str(error_data))
+            except:
+                error_msg = response.text or "Unknown error"
             raise RuntimeError(f"GLM API error: {error_msg}")
 
         result = response.json()

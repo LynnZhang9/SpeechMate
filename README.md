@@ -4,10 +4,10 @@ SpeechMate 是一个本地运行的语音识别与翻译助手，面向个人用
 
 ## 功能特性
 
-- **语音识别** - 按住 F8 录音，松开后自动识别语音并转换为文字
+- **语音识别** - 按住 **Cmd+Shift+R** 录音，松开后自动识别语音并转换为文字
 - **中英翻译** - 支持中文翻译为英文，英文翻译为中文
 - **自动粘贴** - 识别/翻译结果自动粘贴到光标位置
-- **系统托盘** - 后台运行，托盘图标指示录音状态
+- **浮动面板** - 顶部悬浮窗显示录音状态（兼容 macOS Sequoia）
 - **Web Admin** - 网页界面配置 API Key
 
 ## 系统要求
@@ -42,7 +42,7 @@ pip install -r requirements.txt
 
 ### 3. 配置 API Key
 
-启动 Host Server 后，访问 http://127.0.0.1:8000/admin 配置你的 GLM API Key。
+启动 Host Server 后，访问 http://127.0.0.1:8001/admin 配置你的 GLM API Key。
 
 ### 4. 运行
 
@@ -53,10 +53,10 @@ pip install -r requirements.txt
 
 # 方法2: 手动启动
 cd host
-uvicorn main:app --host 127.0.0.1 --port 8000
+uvicorn main:app --host 127.0.0.1 --port 8001
 
 # 开发模式（代码修改后自动重启）
-uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+uvicorn main:app --host 127.0.0.1 --port 8001 --reload
 ```
 
 **启动 Client:**
@@ -70,9 +70,9 @@ python -m client.main
 
 ### 5. 使用
 
-1. 确保系统托盘显示 SpeechMate 图标
-2. 按住 **F8** 键开始录音（托盘图标变化）
-3. 松开 F8 键停止录音
+1. 确保屏幕右上角显示 SpeechMate 浮动面板（蓝色圆点 + "SM"）
+2. 按住 **Cmd+Shift+R** 键开始录音（圆点变为红色）
+3. 松开按键停止录音
 4. 等待识别完成，文字自动粘贴到光标位置
 
 ## 项目结构
@@ -93,8 +93,8 @@ SpeechMate/
 │
 ├── client/                    # Client 应用 (PyQt5)
 │   ├── main.py               # 应用入口
-│   ├── tray.py               # 系统托盘
-│   ├── hotkey.py             # 热键监听
+│   ├── floating_panel.py     # 浮动面板（替代系统托盘）
+│   ├── hotkey.py             # 热键监听（支持组合键）
 │   ├── recorder.py           # 录音
 │   ├── api_client.py         # HTTP 客户端
 │   ├── clipboard.py          # 剪贴板操作
@@ -148,10 +148,35 @@ pytest
 |------|------|
 | Host Server | Python 3.10+ / FastAPI |
 | Client | Python 3.10+ / PyQt5 |
-| AI 服务 | GLM API (智谱) |
+| AI 服务 | GLM API (智谱) - glm-asr 模型 |
 | 音频录制 | sounddevice / soundfile |
 | 剪贴板 | pyperclip |
 | 热键 | pynput |
+| HTTP 客户端 | requests |
+
+## macOS 兼容性说明
+
+### macOS Sequoia 15.x 注意事项
+
+由于 macOS Sequoia 存在系统托盘图标不显示的问题，SpeechMate 使用**浮动面板**作为替代方案：
+
+- 浮动面板显示在屏幕右上角
+- 蓝色圆点 = 就绪状态
+- 红色圆点 = 录音中
+- 橙色圆点 = 处理中
+- 点击面板可显示菜单
+
+### macOS 权限配置
+
+首次运行需要配置以下权限：
+
+1. **辅助功能权限**（用于全局快捷键）
+   - 系统设置 > 隐私与安全性 > 辅助功能
+   - 添加终端或 Python 到允许列表
+
+2. **麦克风权限**
+   - 系统设置 > 隐私与安全性 > 麦克风
+   - 允许终端访问麦克风
 
 ## License
 

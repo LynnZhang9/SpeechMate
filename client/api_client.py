@@ -1,10 +1,10 @@
 """API client for SpeechMate Client.
 
-Uses httpx to communicate with the SpeechMate Host Server.
+Uses requests to communicate with the SpeechMate Host Server.
 """
 
 from typing import Tuple
-import httpx
+import requests
 
 
 class SpeechMateClient:
@@ -13,8 +13,8 @@ class SpeechMateClient:
     Provides methods for health checks, transcription, and translation.
     """
 
-    DEFAULT_HOST = "http://127.0.0.1:8000"
-    DEFAULT_TIMEOUT = 60.0  # seconds
+    DEFAULT_HOST = "http://127.0.0.1:8001"
+    DEFAULT_TIMEOUT = 120.0  # seconds - increased for ASR processing
 
     def __init__(self, host: str = DEFAULT_HOST, timeout: float = DEFAULT_TIMEOUT):
         """Initialize the API client.
@@ -25,7 +25,11 @@ class SpeechMateClient:
         """
         self._host = host.rstrip("/")
         self._timeout = timeout
-        self._client = httpx.Client(timeout=timeout)
+        # Create a session for connection reuse
+        self._session = requests.Session()
+        self._session.timeout = timeout
+        # Disable proxy for localhost connections
+        self._session.trust_env = False
 
     def health_check(self) -> bool:
         """Check if the server is healthy.
@@ -34,9 +38,9 @@ class SpeechMateClient:
             True if server is healthy, False otherwise.
         """
         try:
-            response = self._client.get(f"{self._host}/health")
+            response = self._session.get(f"{self._host}/health", timeout=5.0)
             return response.status_code == 200
-        except (httpx.HTTPError, httpx.NetworkError, httpx.TimeoutException):
+        except Exception:
             return False
 
     def transcribe(self, audio_bytes: bytes) -> Tuple[bool, str]:
@@ -51,11 +55,14 @@ class SpeechMateClient:
                 - If failed: (False, error_message)
         """
         try:
+            print(f"[DEBUG] Sending {len(audio_bytes)} bytes to {self._host}/api/speech")
             files = {"audio": ("audio.wav", audio_bytes, "audio/wav")}
-            response = self._client.post(
+            response = self._session.post(
                 f"{self._host}/api/speech",
-                files=files
+                files=files,
+                timeout=self._timeout
             )
+            print(f"[DEBUG] Response status: {response.status_code}")
 
             if response.status_code == 200:
                 data = response.json()
@@ -76,9 +83,9 @@ class SpeechMateClient:
                     error_msg = f"HTTP {response.status_code}"
                 return False, error_msg
 
-        except httpx.TimeoutException:
+        except requests.exceptions.Timeout:
             return False, "Request timed out"
-        except httpx.NetworkError:
+        except requests.exceptions.ConnectionError:
             return False, "Network error - server unreachable"
         except Exception as e:
             return False, f"Error: {str(e)}"
@@ -96,9 +103,10 @@ class SpeechMateClient:
                 - If failed: (False, error_message)
         """
         try:
-            response = self._client.post(
+            response = self._session.post(
                 f"{self._host}/api/translate",
-                json={"text": text, "target_lang": target_lang}
+                json={"text": text, "target_lang": target_lang},
+                timeout=self._timeout
             )
 
             if response.status_code == 200:
@@ -120,16 +128,16 @@ class SpeechMateClient:
                     error_msg = f"HTTP {response.status_code}"
                 return False, error_msg
 
-        except httpx.TimeoutException:
+        except requests.exceptions.Timeout:
             return False, "Request timed out"
-        except httpx.NetworkError:
+        except requests.exceptions.ConnectionError:
             return False, "Network error - server unreachable"
         except Exception as e:
             return False, f"Error: {str(e)}"
 
     def close(self):
-        """Close the HTTP client connection."""
-        self._client.close()
+        """Close the HTTP session."""
+        self._session.close()
 
     def __enter__(self):
         """Context manager entry."""
