@@ -111,10 +111,13 @@ class HotkeyListener(QObject):
     def _shared_on_press(cls, key) -> bool:
         """Handle key press events for ALL registered hotkeys."""
         with cls._shared_lock:
+            # Debug: print raw key
+            print(f"[DEBUG] Raw key pressed: {key}, type: {type(key)}")
             # Track modifiers globally
             if key in cls.MODIFIER_KEYS:
                 modifier = cls.MODIFIER_KEYS[key]
                 cls._pressed_modifiers.add(modifier)
+                print(f"[DEBUG] Modifier detected: {modifier}, current modifiers: {cls._pressed_modifiers}")
             else:
                 cls._pressed_keys.add(key)
 
