@@ -48,7 +48,7 @@ class SpeechMateApp:
         self._clipboard = ClipboardManager()
         self._recorder = AudioRecorder()
         self._tray = create_tray_icon()
-        self._hotkey_listener = HotkeyListener("cmd+shift+r")
+        self._hotkey_listener = HotkeyListener("cmd+shift+r", hotkey_id="transcribe")
 
         # Track if we're waiting for a transcription
         self._processing = False
@@ -57,7 +57,7 @@ class SpeechMateApp:
         self._mode = WorkMode.TRANSCRIBE
 
         # 新增：翻译热键监听器
-        self._translate_hotkey = HotkeyListener("cmd+shift+t")
+        self._translate_hotkey = HotkeyListener("cmd+shift+t", hotkey_id="translate")
 
         # Connect signals
         self._setup_connections()

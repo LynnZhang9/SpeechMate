@@ -5,7 +5,7 @@ Supports both single keys and key combinations.
 """
 
 import threading
-from typing import Optional, Set
+from typing import Optional, Set, Dict
 from PyQt5.QtCore import QObject, pyqtSignal
 from pynput import keyboard
 
@@ -13,17 +13,17 @@ from pynput import keyboard
 class HotkeyListener(QObject):
     """Global hotkey listener using pynput.
 
-    Listens for hotkey press/release events globally and emits signals.
+    Uses a SINGLE pynput listener to handle multiple hotkey combinations.
     Supports key combinations like Cmd+Shift+R.
 
     Signals:
-        hotkey_pressed: Emitted when hotkey is pressed down.
-        hotkey_released: Emitted when hotkey is released.
+        hotkey_pressed: Emitted when a registered hotkey is pressed (arg: hotkey_id)
+        hotkey_released: Emitted when a registered hotkey is released (arg: hotkey_id)
     """
 
-    # Signals
-    hotkey_pressed = pyqtSignal()
-    hotkey_released = pyqtSignal()
+    # Signals - now with hotkey_id argument
+    hotkey_pressed = pyqtSignal(str)   # hotkey_id
+    hotkey_released = pyqtSignal(str)  # hotkey_id
 
     # Modifier keys mapping
     MODIFIER_KEYS = {
@@ -41,30 +41,33 @@ class HotkeyListener(QObject):
         keyboard.Key.alt_r: 'alt',
     }
 
-    def __init__(self, hotkey: str = "cmd+shift+r", parent: Optional[QObject] = None):
+    # Class-level shared listener
+    _shared_listener: Optional[keyboard.Listener] = None
+    _shared_lock = threading.Lock()
+    _instances: Dict[str, 'HotkeyListener'] = {}
+    _pressed_modifiers: Set[str] = set()
+    _pressed_keys: Set = set()
+
+    def __init__(self, hotkey: str = "cmd+shift+r", hotkey_id: Optional[str] = None, parent: Optional[QObject] = None):
         """Initialize the hotkey listener.
 
         Args:
             hotkey: The hotkey combination (e.g., "cmd+shift+r", "f8").
-                   Use "+" to separate keys. Modifiers: cmd, shift, ctrl, alt.
-                   Single keys: "f8", "space", etc.
+            hotkey_id: Unique identifier for this hotkey (defaults to hotkey string).
             parent: Parent QObject.
         """
         super().__init__(parent)
         self._hotkey_str = hotkey.lower()
+        self._hotkey_id = hotkey_id or self._hotkey_str
         self._parse_hotkey(hotkey)
-        self._listener: Optional[keyboard.Listener] = None
-        self._lock = threading.Lock()
         self._is_running = False
-        self._pressed_modifiers: Set[str] = set()
-        self._pressed_keys: Set[keyboard.Key] = set()
+
+        # Register this instance
+        with self._shared_lock:
+            HotkeyListener._instances[self._hotkey_id] = self
 
     def _parse_hotkey(self, hotkey: str):
-        """Parse the hotkey string into modifiers and main key.
-
-        Args:
-            hotkey: The hotkey string (e.g., "cmd+shift+r").
-        """
+        """Parse the hotkey string into modifiers and main key."""
         parts = [p.strip().lower() for p in hotkey.split('+')]
         self._modifiers = set()
         self._main_key = None
@@ -79,144 +82,116 @@ class HotkeyListener(QObject):
             elif part in ('alt', 'option', '⌥'):
                 self._modifiers.add('alt')
             else:
-                # This is the main key
                 self._main_key = part
 
-        print(f"[DEBUG] Parsed hotkey: modifiers={self._modifiers}, main_key={self._main_key}")
+        print(f"[DEBUG] Parsed hotkey: id={self._hotkey_id}, modifiers={self._modifiers}, main_key={self._main_key}")
 
-    def _get_key_name(self, key) -> Optional[str]:
-        """Get the name of a key.
-
-        Args:
-            key: The key from pynput.
-
-        Returns:
-            The key name as a string.
-        """
+    @classmethod
+    def _get_key_name(cls, key) -> Optional[str]:
+        """Get the name of a key."""
         if isinstance(key, keyboard.KeyCode):
             return key.char.lower() if key.char else None
         elif isinstance(key, keyboard.Key):
-            # Handle special keys like f8, space, etc.
-            key_name = str(key).replace('Key.', '').lower()
-            return key_name
+            return str(key).replace('Key.', '').lower()
         return None
 
-    def _check_hotkey_match(self) -> bool:
-        """Check if the current pressed keys match the hotkey.
-
-        Returns:
-            True if the hotkey combination is pressed.
-        """
-        # Check if all required modifiers are pressed
-        if not self._modifiers.issubset(self._pressed_modifiers):
+    def _check_hotkey_match(self, pressed_modifiers: Set[str], pressed_keys: Set) -> bool:
+        """Check if the current pressed keys match this hotkey."""
+        if not self._modifiers.issubset(pressed_modifiers):
             return False
-
-        # Check if the main key is pressed
         if self._main_key is None:
             return False
-
-        # Check main key in pressed keys
-        for key in self._pressed_keys:
+        for key in pressed_keys:
             key_name = self._get_key_name(key)
             if key_name == self._main_key:
                 return True
-
         return False
 
-    def _on_press(self, key) -> bool:
-        """Handle key press events.
+    @classmethod
+    def _shared_on_press(cls, key) -> bool:
+        """Handle key press events for ALL registered hotkeys."""
+        with cls._shared_lock:
+            # Track modifiers globally
+            if key in cls.MODIFIER_KEYS:
+                modifier = cls.MODIFIER_KEYS[key]
+                cls._pressed_modifiers.add(modifier)
+            else:
+                cls._pressed_keys.add(key)
 
-        Args:
-            key: The key that was pressed.
-
-        Returns:
-            True to continue listening.
-        """
-        # Track modifier keys
-        if key in self.MODIFIER_KEYS:
-            modifier = self.MODIFIER_KEYS[key]
-            self._pressed_modifiers.add(modifier)
-            print(f"[DEBUG] Modifier pressed: {modifier}, current: {self._pressed_modifiers}")
-        else:
-            # Track regular keys
-            self._pressed_keys.add(key)
-            key_name = self._get_key_name(key)
-            print(f"[DEBUG] Key pressed: {key} (name: {key_name})")
-
-        # Check for hotkey match
-        if self._check_hotkey_match():
-            print(f"[DEBUG] Hotkey '{self._hotkey_str}' matched! Emitting signal")
-            self.hotkey_pressed.emit()
+            # Check each registered hotkey
+            for hotkey_id, instance in cls._instances.items():
+                if instance._check_hotkey_match(cls._pressed_modifiers, cls._pressed_keys):
+                    print(f"[DEBUG] Hotkey '{hotkey_id}' matched! Emitting signal")
+                    instance.hotkey_pressed.emit(hotkey_id)
 
         return True
 
-    def _on_release(self, key) -> bool:
-        """Handle key release events.
+    @classmethod
+    def _shared_on_release(cls, key) -> bool:
+        """Handle key release events for ALL registered hotkeys."""
+        with cls._shared_lock:
+            # First, check which hotkeys are currently matched (before releasing)
+            was_matched = {}
+            for hotkey_id, instance in cls._instances.items():
+                was_matched[hotkey_id] = instance._check_hotkey_match(cls._pressed_modifiers, cls._pressed_keys)
 
-        Args:
-            key: The key that was released.
+            # Update global state
+            if key in cls.MODIFIER_KEYS:
+                modifier = cls.MODIFIER_KEYS[key]
+                cls._pressed_modifiers.discard(modifier)
+            else:
+                cls._pressed_keys.discard(key)
 
-        Returns:
-            True to continue listening.
-        """
-        was_matched = self._check_hotkey_match()
-
-        # Remove from tracked keys
-        if key in self.MODIFIER_KEYS:
-            modifier = self.MODIFIER_KEYS[key]
-            self._pressed_modifiers.discard(modifier)
-        else:
-            self._pressed_keys.discard(key)
-
-        # If hotkey was matched and now released, emit released signal
-        if was_matched and not self._check_hotkey_match():
-            print(f"[DEBUG] Hotkey '{self._hotkey_str}' released! Emitting signal")
-            self.hotkey_released.emit()
+            # Check for release after state update
+            for hotkey_id, instance in cls._instances.items():
+                now_matched = instance._check_hotkey_match(cls._pressed_modifiers, cls._pressed_keys)
+                if was_matched.get(hotkey_id, False) and not now_matched:
+                    print(f"[DEBUG] Hotkey '{hotkey_id}' released! Emitting signal")
+                    instance.hotkey_released.emit(hotkey_id)
 
         return True
 
     def start(self) -> bool:
-        """Start listening for hotkey events.
-
-        Returns:
-            True if started successfully, False if already running.
-        """
-        with self._lock:
+        """Start listening for hotkey events."""
+        with self._shared_lock:
             if self._is_running:
                 return False
 
-            self._listener = keyboard.Listener(
-                on_press=self._on_press,
-                on_release=self._on_release
-            )
-            self._listener.start()
+            # Start shared listener if not running
+            if HotkeyListener._shared_listener is None:
+                HotkeyListener._shared_listener = keyboard.Listener(
+                    on_press=HotkeyListener._shared_on_press,
+                    on_release=HotkeyListener._shared_on_release
+                )
+                HotkeyListener._shared_listener.start()
+                print(f"[DEBUG] Shared HotkeyListener started")
+
             self._is_running = True
-            print(f"[DEBUG] HotkeyListener started, listening for: {self._hotkey_str}")
+            print(f"[DEBUG] Hotkey '{self._hotkey_id}' registered")
             return True
 
     def stop(self) -> bool:
-        """Stop listening for hotkey events.
-
-        Returns:
-            True if stopped successfully, False if not running.
-        """
-        with self._lock:
-            if not self._is_running or self._listener is None:
+        """Stop listening for this hotkey (unregister)."""
+        with self._shared_lock:
+            if not self._is_running:
                 return False
 
-            self._listener.stop()
-            self._listener = None
+            # Unregister this instance
+            if self._hotkey_id in HotkeyListener._instances:
+                del HotkeyListener._instances[self._hotkey_id]
+
             self._is_running = False
-            self._pressed_modifiers.clear()
-            self._pressed_keys.clear()
-            print("[DEBUG] HotkeyListener stopped")
+            print(f"[DEBUG] Hotkey '{self._hotkey_id}' unregistered")
+
+            # Stop shared listener if no more instances
+            if not HotkeyListener._instances and HotkeyListener._shared_listener:
+                HotkeyListener._shared_listener.stop()
+                HotkeyListener._shared_listener = None
+                print(f"[DEBUG] Shared HotkeyListener stopped")
+
             return True
 
     @property
     def is_running(self) -> bool:
-        """Check if the listener is currently running.
-
-        Returns:
-            True if running, False otherwise.
-        """
+        """Check if this hotkey is registered."""
         return self._is_running
