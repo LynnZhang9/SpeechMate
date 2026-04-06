@@ -123,13 +123,15 @@ class SpeechMateApp:
         return self._client.health_check()
 
     def _on_hotkey_pressed(self):
-        """Handle F8 press - start recording."""
+        """Handle Cmd+Shift+R press - start recording."""
         print("[DEBUG] _on_hotkey_pressed called")
         if self._processing:
             # Ignore if already processing a recording
             print("[DEBUG] Ignoring hotkey - already processing")
             return
 
+        self._mode = WorkMode.TRANSCRIBE
+        self._tray.set_mode(WorkMode.TRANSCRIBE)
         print("[DEBUG] Starting recording...")
         self._recorder.start_recording()
 
