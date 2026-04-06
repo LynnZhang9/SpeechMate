@@ -12,7 +12,8 @@ class GLMClient:
         if not api_key:
             raise ValueError("API key is required")
         self.api_key = api_key
-        self.client = httpx.AsyncClient(timeout=60.0)
+        # Disable proxy to avoid connection issues with local API calls
+        self.client = httpx.AsyncClient(timeout=60.0, proxy=None)
 
     async def close(self):
         """Close the HTTP client"""
