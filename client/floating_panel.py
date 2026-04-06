@@ -14,6 +14,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, pyqtSignal, QPoint, QSize
 from PyQt5.QtGui import QFont, QColor, QCursor, QPalette
 
+from client.modes import WorkMode
+
 
 class FloatingPanel(QWidget):
     """A small floating panel that shows SpeechMate status.
@@ -37,8 +39,9 @@ class FloatingPanel(QWidget):
     # Colors for different states
     COLORS = {
         "ready": "#3B82F6",      # Blue
-        "recording": "#EF4444",   # Red
-        "processing": "#F59E0B",  # Orange/Amber
+        "recording": "#EF4444",  # Red
+        "processing": "#F59E0B", # Orange/Amber
+        "translate": "#4CAF50",  # Green
     }
 
     # Message icon constants (for compatibility with QSystemTrayIcon)
@@ -58,6 +61,7 @@ class FloatingPanel(QWidget):
         self._admin_url = admin_url
         self._state = self.STATE_READY
         self._drag_pos = QPoint()
+        self._mode = WorkMode.TRANSCRIBE
 
         # Setup UI
         self._setup_ui()
@@ -128,7 +132,11 @@ class FloatingPanel(QWidget):
             print("[DEBUG] FloatingPanel: Recording state")
         else:
             self._state = self.STATE_READY
-            self._status_indicator.setStyleSheet(f"color: {self.COLORS['ready']};")
+            # 根据当前模式设置颜色
+            if self._mode == WorkMode.TRANSLATE:
+                self._status_indicator.setStyleSheet(f"color: {self.COLORS['translate']};")
+            else:
+                self._status_indicator.setStyleSheet(f"color: {self.COLORS['ready']};")
             self._status_label.setText("SM")
             print("[DEBUG] FloatingPanel: Ready state")
 
@@ -143,6 +151,21 @@ class FloatingPanel(QWidget):
             self._status_indicator.setStyleSheet(f"color: {self.COLORS['processing']};")
             self._status_label.setText("...")
             print("[DEBUG] FloatingPanel: Processing state")
+
+    def set_mode(self, mode: WorkMode):
+        """设置当前工作模式，更新面板颜色。
+
+        Args:
+            mode: 工作模式（TRANSCRIBE 或 TRANSLATE）
+        """
+        self._mode = mode
+        # 仅在就绪状态时更新颜色
+        if self._state == self.STATE_READY:
+            if mode == WorkMode.TRANSLATE:
+                self._status_indicator.setStyleSheet(f"color: {self.COLORS['translate']};")
+            else:
+                self._status_indicator.setStyleSheet(f"color: {self.COLORS['ready']};")
+        print(f"[DEBUG] FloatingPanel: Mode set to {mode.value}")
 
     def show_message(self, title: str, message: str, icon=1, msecs: int = 3000):
         """Show a notification message.
