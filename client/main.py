@@ -57,7 +57,7 @@ class SpeechMateApp:
         self._mode = WorkMode.TRANSCRIBE
 
         # 新增：翻译热键监听器
-        self._translate_hotkey = HotkeyListener("cmd+shift+t", hotkey_id="translate")
+        self._translate_hotkey = HotkeyListener("cmd+alt+t", hotkey_id="translate")
 
         # Connect signals
         self._setup_connections()
