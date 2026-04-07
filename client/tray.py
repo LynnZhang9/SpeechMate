@@ -5,6 +5,8 @@ from PyQt5.QtGui import QIcon, QPixmap, QPainter, QColor, QBrush
 from PyQt5.QtCore import pyqtSignal, QObject
 import webbrowser
 
+from client.modes import WorkMode
+
 
 class TrayIcon(QSystemTrayIcon):
     """System tray icon with normal and recording states.
@@ -21,6 +23,14 @@ class TrayIcon(QSystemTrayIcon):
     # Icon sizes
     ICON_SIZE = 64
 
+    # Colors for different states
+    COLORS = {
+        "ready": QColor(59, 130, 246),      # Blue - transcribe mode
+        "recording": QColor(239, 68, 68),   # Red
+        "processing": QColor(245, 158, 11), # Orange
+        "translate": QColor(76, 175, 80),   # Green - translate mode
+    }
+
     def __init__(self, parent=None, admin_url: str = "http://localhost:5000"):
         """Initialize the tray icon.
 
@@ -32,10 +42,13 @@ class TrayIcon(QSystemTrayIcon):
 
         self._admin_url = admin_url
         self._is_recording = False
+        self._mode = WorkMode.TRANSCRIBE
 
         # Create icons
-        self._normal_icon = self._create_circle_icon(QColor(59, 130, 246))  # Blue
-        self._recording_icon = self._create_circle_icon(QColor(239, 68, 68))  # Red
+        self._normal_icon = self._create_circle_icon(self.COLORS["ready"])
+        self._recording_icon = self._create_circle_icon(self.COLORS["recording"])
+        self._processing_icon = self._create_circle_icon(self.COLORS["processing"])
+        self._translate_icon = self._create_circle_icon(self.COLORS["translate"])
 
         # Set initial icon
         self.setIcon(self._normal_icon)
@@ -111,7 +124,34 @@ class TrayIcon(QSystemTrayIcon):
             self.setIcon(self._recording_icon)
             self.setToolTip("SpeechMate - Recording...")
         else:
-            self.setIcon(self._normal_icon)
+            # Restore to current mode's icon
+            self.set_mode(self._mode)
+
+    def set_processing(self, is_processing: bool):
+        """Set the processing state of the tray icon.
+
+        Args:
+            is_processing: True if processing, False if normal state.
+        """
+        if is_processing:
+            self.setIcon(self._processing_icon)
+            self.setToolTip("SpeechMate - Processing...")
+        else:
+            # Restore to current mode's icon
+            self.set_mode(self._mode)
+
+    def set_mode(self, mode: WorkMode):
+        """Set the work mode of the tray icon.
+
+        Args:
+            mode: WorkMode.TRANSCRIBE or WorkMode.TRANSLATE
+        """
+        self._mode = mode
+        if not self._is_recording:
+            if mode == WorkMode.TRANSLATE:
+                self.setIcon(self._translate_icon)
+            else:
+                self.setIcon(self._normal_icon)
             self.setToolTip("SpeechMate")
 
     def show_message(self, title: str, message: str,
