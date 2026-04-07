@@ -122,9 +122,9 @@ class SpeechMateApp:
         """
         return self._client.health_check()
 
-    def _on_hotkey_pressed(self):
+    def _on_hotkey_pressed(self, hotkey_id: str):
         """Handle Cmd+Shift+R press - start recording."""
-        print("[DEBUG] _on_hotkey_pressed called")
+        print(f"[DEBUG] _on_hotkey_pressed called with hotkey_id={hotkey_id}")
         if self._processing:
             # Ignore if already processing a recording
             print("[DEBUG] Ignoring hotkey - already processing")
@@ -135,9 +135,9 @@ class SpeechMateApp:
         print("[DEBUG] Starting recording...")
         self._recorder.start_recording()
 
-    def _on_hotkey_released(self):
+    def _on_hotkey_released(self, hotkey_id: str):
         """Handle F8 release - stop recording and process."""
-        print("[DEBUG] _on_hotkey_released called")
+        print(f"[DEBUG] _on_hotkey_released called with hotkey_id={hotkey_id}")
         if self._processing:
             return
 
@@ -218,9 +218,9 @@ class SpeechMateApp:
 
         self._processing = False
 
-    def _on_translate_hotkey_pressed(self):
-        """Handle Cmd+Shift+T press - start recording in translate mode."""
-        print("[DEBUG] _on_translate_hotkey_pressed called")
+    def _on_translate_hotkey_pressed(self, hotkey_id: str):
+        """Handle Cmd+Shift+Y press - start recording in translate mode."""
+        print(f"[DEBUG] _on_translate_hotkey_pressed called with hotkey_id={hotkey_id}")
         if self._processing:
             print("[DEBUG] Ignoring hotkey - already processing")
             return
@@ -230,9 +230,9 @@ class SpeechMateApp:
         print("[DEBUG] Starting recording in TRANSLATE mode...")
         self._recorder.start_recording()
 
-    def _on_translate_hotkey_released(self):
-        """Handle Cmd+Shift+T release - stop recording."""
-        print("[DEBUG] _on_translate_hotkey_released called")
+    def _on_translate_hotkey_released(self, hotkey_id: str):
+        """Handle Cmd+Shift+Y release - stop recording."""
+        print(f"[DEBUG] _on_translate_hotkey_released called with hotkey_id={hotkey_id}")
         if self._processing:
             return
 
