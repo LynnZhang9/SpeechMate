@@ -1,5 +1,4 @@
 """System tray icon for SpeechMate Client."""
-
 from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QAction
 from PyQt5.QtGui import QIcon, QPixmap, QPainter, QColor, QBrush, QPen
 from PyQt5.QtCore import pyqtSignal, QObject, Qt
@@ -11,19 +10,15 @@ from client.modes import WorkMode
 
 class TrayIcon(QSystemTrayIcon):
     """System tray icon with normal and recording states.
-
     Signals:
         exit_requested: Emitted when user requests to quit the application.
         config_requested: Emitted when user requests to open configuration.
     """
-
     # Signals
     exit_requested = pyqtSignal()
     config_requested = pyqtSignal()
-
     # Icon sizes
     ICON_SIZE = 64
-
     # Colors for different states
     COLORS = {
         "ready": QColor(59, 130, 246),      # Blue - transcribe mode
@@ -31,60 +26,46 @@ class TrayIcon(QSystemTrayIcon):
         "processing": QColor(245, 158, 11), # Orange
         "translate": QColor(76, 175, 80),   # Green - translate mode
     }
-
     def __init__(self, parent=None, admin_url: str = "http://localhost:5000"):
         """Initialize the tray icon.
-
         Args:
             parent: Parent QObject.
             admin_url: URL for the Web Admin interface.
         """
         super().__init__(parent)
-
         self._admin_url = admin_url
         self._is_recording = False
         self._mode = WorkMode.TRANSCRIBE
-
         # Create icons
         self._normal_icon = self._create_wave_icon(self.COLORS["ready"])
         self._recording_icon = self._create_wave_icon(self.COLORS["recording"])
         self._processing_icon = self._create_wave_icon(self.COLORS["processing"])
         self._translate_icon = self._create_wave_icon(self.COLORS["translate"])
-
         # Set initial icon
         self.setIcon(self._normal_icon)
         self.setToolTip("SpeechMate")
-
         # Setup context menu
         self._setup_menu()
-
     def _create_wave_icon(self, color: QColor) -> QIcon:
         """Create a sound wave icon with the specified color.
-
         Args:
             color: The fill color for the wave.
-
         Returns:
             QIcon with a sound wave design.
         """
         pixmap = QPixmap(self.ICON_SIZE, self.ICON_SIZE)
         pixmap.fill(QColor(0, 0, 0, 0))  # Transparent background
-
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.Antialiasing)
         painter.setBrush(QBrush(color))
         painter.setPen(QColor(0, 0, 0, 0))  # No border
-
         # Draw sound wave (3 curved lines)
         center_y = self.ICON_SIZE // 2
         margin = 8
         wave_width = self.ICON_SIZE - 2 * margin
-
         # Wave parameters - multiple curved lines to create wave effect
         pen = QPen(QBrush(color), 3, Qt.SolidLine, Qt.RoundCap)
-
         painter.setPen(pen)
-
         # Draw three curved wave lines
         for i in range(3):
             # Each wave line: curved path from left to right
@@ -105,7 +86,6 @@ class TrayIcon(QSystemTrayIcon):
             painter.drawPath(path)
         painter.end()
         return QIcon(pixmap)
-
     def _setup_menu(self):
         """Setup the context menu for the tray icon."""
         menu = QMenu()
@@ -126,8 +106,6 @@ class TrayIcon(QSystemTrayIcon):
     def _on_exit(self):
         """Handle exit action."""
         self.exit_requested.emit()
-
-    def set_recording(self, is_recording: bool):
     def set_recording(self, is_recording: bool):
         """Set the recording state of the tray icon.
         Args:
@@ -149,7 +127,7 @@ class TrayIcon(QSystemTrayIcon):
             self.setIcon(self._processing_icon)
             self.setToolTip("SpeechMate - Processing...")
         else:
-            # restore to current mode's icon
+            # Restore to current mode's icon
             self.set_mode(self._mode)
     def set_mode(self, mode: WorkMode):
         """Set the work mode of the tray icon.
