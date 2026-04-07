@@ -2,7 +2,8 @@
 
 from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QAction
 from PyQt5.QtGui import QIcon, QPixmap, QPainter, QColor, QBrush, QPen
-from PyQt5.QtCore import pyqtSignal, QObject, Qt,from PyQt5.QtGui import QPainterPath
+from PyQt5.QtCore import pyqtSignal, QObject, Qt
+from PyQt5.QtGui import QPainterPath
 import webbrowser
 
 from client.modes import WorkMode
