@@ -45,10 +45,10 @@ class TrayIcon(QSystemTrayIcon):
         self._mode = WorkMode.TRANSCRIBE
 
         # Create icons
-        self._normal_icon = self._create_circle_icon(self.COLORS["ready"])
-        self._recording_icon = self._create_circle_icon(self.COLORS["recording"])
-        self._processing_icon = self._create_circle_icon(self.COLORS["processing"])
-        self._translate_icon = self._create_circle_icon(self.COLORS["translate"])
+        self._normal_icon = self._create_wave_icon(self.COLORS["ready"])
+        self._recording_icon = self._create_wave_icon(self.COLORS["recording"])
+        self._processing_icon = self._create_wave_icon(self.COLORS["processing"])
+        self._translate_icon = self._create_wave_icon(self.COLORS["translate"])
 
         # Set initial icon
         self.setIcon(self._normal_icon)
@@ -57,32 +57,55 @@ class TrayIcon(QSystemTrayIcon):
         # Setup context menu
         self._setup_menu()
 
-    def _create_circle_icon(self, color: QColor) -> QIcon:
-        """Create a circular icon with the specified color.
+    def _create_wave_icon(self, color: QColor) -> QIcon:
+        """Create a sound wave icon with the specified color.
 
         Args:
-            color: The fill color for the circle.
+            color: The fill color for the wave.
 
         Returns:
-            QIcon with a colored circle.
+            QIcon with a sound wave design.
         """
         pixmap = QPixmap(self.ICON_SIZE, self.ICON_SIZE)
         pixmap.fill(QColor(0, 0, 0, 0))  # Transparent background
 
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.Antialiasing)
+
         painter.setBrush(QBrush(color))
         painter.setPen(QColor(0, 0, 0, 0))  # No border
 
-        # Draw circle with small margin
-        margin = 4
-        painter.drawEllipse(
-            margin,
-            margin,
-            self.ICON_SIZE - 2 * margin,
-            self.ICON_SIZE - 2 * margin
-        )
-        painter.end()
+        # Draw sound wave (3 curved lines)
+        center_y = self.ICON_SIZE // 2
+        margin = 8
+        wave_width = self.ICON_SIZE - 2 * margin
+
+        # Wave parameters - multiple curved lines to create wave effect
+        from PyQt5.QtGui import QPen
+        painter.setPen(QPen(color, 3, Qt.SolidLine, Qt.RoundCap))
+
+        # Draw three curved wave lines
+        for i in range(3):
+            # Each wave line: curved path from left to right
+            start_x = margin
+            start_y = center_y - 8 + i * 6
+            mid_y = center_y + 4 + i * 4
+            end_x = self.ICON_SIZE - margin
+
+            end_y = start_y  # End at same height
+
+            # Draw smooth curve using cubic Bezier
+            path = QPainterPath()
+            path.moveTo(start_x, start_y)
+            # Control points for the curve
+            ctrl1_x = start_x + wave_width * 0.3
+            ctrl1_y = start_y - 4
+            ctrl2_x = start_x + wave_width * 0.7
+            ctrl2_y = end_y + 4
+            path.cubicTo(ctrl1_x, ctrl1_y, ctrl2_x, ctrl2_y, end_x, end_y)
+            painter.drawPath(path)
+
+            painter.end()
 
         return QIcon(pixmap)
 
