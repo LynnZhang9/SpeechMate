@@ -81,7 +81,9 @@ class TrayIcon(QSystemTrayIcon):
         wave_width = self.ICON_SIZE - 2 * margin
 
         # Wave parameters - multiple curved lines to create wave effect
-        painter.setPen(QPen(QBrush(color), 3, Qt.SolidLine, Qt.RoundCap))
+        pen = QPen(QBrush(color), 3, Qt.SolidLine, Qt.RoundCap)
+
+        painter.setPen(pen)
 
         # Draw three curved wave lines
         for i in range(3):
@@ -124,6 +126,8 @@ class TrayIcon(QSystemTrayIcon):
     def _on_exit(self):
         """Handle exit action."""
         self.exit_requested.emit()
+
+    def set_recording(self, is_recording: bool):
     def set_recording(self, is_recording: bool):
         """Set the recording state of the tray icon.
         Args:
