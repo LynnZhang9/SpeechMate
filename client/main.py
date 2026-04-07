@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt
-from client.floating_panel import create_tray_icon
+from client.tray import TrayIcon
 from client.hotkey import HotkeyListener
 from client.recorder import AudioRecorder
 from client.api_client import SpeechMateClient
@@ -47,7 +47,7 @@ class SpeechMateApp:
         self._client = SpeechMateClient()
         self._clipboard = ClipboardManager()
         self._recorder = AudioRecorder()
-        self._tray = create_tray_icon()
+        self._tray = TrayIcon()
         self._hotkey_listener = HotkeyListener("cmd+shift+r", hotkey_id="transcribe")
 
         # Track if we're waiting for a transcription
