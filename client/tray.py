@@ -81,7 +81,7 @@ class TrayIcon(QSystemTrayIcon):
         wave_width = self.ICON_SIZE - 2 * margin
 
         # Wave parameters - multiple curved lines to create wave effect
-        painter.setPen(QPen(color, 3, Qt.SolidLine, Qt.RoundCap))
+        painter.setPen(QPen(QBrush(color), 3, Qt.SolidLine, Qt.RoundCap))
 
         # Draw three curved wave lines
         for i in range(3):
