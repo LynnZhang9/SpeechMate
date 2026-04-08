@@ -47,6 +47,7 @@ class HotkeyListener(QObject):
     _instances: Dict[str, 'HotkeyListener'] = {}
     _pressed_modifiers: Set[str] = set()
     _pressed_keys: Set = set()
+    _active_hotkeys: Set[str] = set()  # Track which hotkeys are currently active
 
     def __init__(self, hotkey: str = "cmd+shift+r", hotkey_id: Optional[str] = None, parent: Optional[QObject] = None):
         """Initialize the hotkey listener.
@@ -84,8 +85,6 @@ class HotkeyListener(QObject):
             else:
                 self._main_key = part
 
-        print(f"[DEBUG] Parsed hotkey: id={self._hotkey_id}, modifiers={self._modifiers}, main_key={self._main_key}")
-
     @classmethod
     def _get_key_name(cls, key) -> Optional[str]:
         """Get the name of a key."""
@@ -111,21 +110,20 @@ class HotkeyListener(QObject):
     def _shared_on_press(cls, key) -> bool:
         """Handle key press events for ALL registered hotkeys."""
         with cls._shared_lock:
-            # Debug: print raw key
-            print(f"[DEBUG] Raw key pressed: {key}, type: {type(key)}")
             # Track modifiers globally
             if key in cls.MODIFIER_KEYS:
                 modifier = cls.MODIFIER_KEYS[key]
                 cls._pressed_modifiers.add(modifier)
-                print(f"[DEBUG] Modifier detected: {modifier}, current modifiers: {cls._pressed_modifiers}")
             else:
                 cls._pressed_keys.add(key)
 
             # Check each registered hotkey
             for hotkey_id, instance in cls._instances.items():
                 if instance._check_hotkey_match(cls._pressed_modifiers, cls._pressed_keys):
-                    print(f"[DEBUG] Hotkey '{hotkey_id}' matched! Emitting signal")
-                    instance.hotkey_pressed.emit(hotkey_id)
+                    # Only emit press signal if this hotkey is not already active
+                    if hotkey_id not in cls._active_hotkeys:
+                        cls._active_hotkeys.add(hotkey_id)
+                        instance.hotkey_pressed.emit(hotkey_id)
 
         return True
 
@@ -148,8 +146,12 @@ class HotkeyListener(QObject):
             # Check for release after state update
             for hotkey_id, instance in cls._instances.items():
                 now_matched = instance._check_hotkey_match(cls._pressed_modifiers, cls._pressed_keys)
-                if was_matched.get(hotkey_id, False) and not now_matched:
-                    print(f"[DEBUG] Hotkey '{hotkey_id}' released! Emitting signal")
+                # Only emit release signal if:
+                # 1. Was matched before release
+                # 2. Is not matched after release
+                # 3. Is in active hotkeys (was actually triggered)
+                if was_matched.get(hotkey_id, False) and not now_matched and hotkey_id in cls._active_hotkeys:
+                    cls._active_hotkeys.discard(hotkey_id)
                     instance.hotkey_released.emit(hotkey_id)
 
         return True
@@ -167,10 +169,8 @@ class HotkeyListener(QObject):
                     on_release=HotkeyListener._shared_on_release
                 )
                 HotkeyListener._shared_listener.start()
-                print(f"[DEBUG] Shared HotkeyListener started")
 
             self._is_running = True
-            print(f"[DEBUG] Hotkey '{self._hotkey_id}' registered")
             return True
 
     def stop(self) -> bool:
@@ -184,7 +184,6 @@ class HotkeyListener(QObject):
                 del HotkeyListener._instances[self._hotkey_id]
 
             self._is_running = False
-            print(f"[DEBUG] Hotkey '{self._hotkey_id}' unregistered")
 
             # Stop shared listener if no more instances
             if not HotkeyListener._instances and HotkeyListener._shared_listener:

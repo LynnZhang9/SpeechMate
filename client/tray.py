@@ -37,53 +37,129 @@ class TrayIcon(QSystemTrayIcon):
         self._is_recording = False
         self._mode = WorkMode.TRANSCRIBE
         # Create icons
-        self._normal_icon = self._create_wave_icon(self.COLORS["ready"])
-        self._recording_icon = self._create_wave_icon(self.COLORS["recording"])
-        self._processing_icon = self._create_wave_icon(self.COLORS["processing"])
-        self._translate_icon = self._create_wave_icon(self.COLORS["translate"])
+        self._normal_icon = self._create_seashell_icon(self.COLORS["ready"])
+        self._recording_icon = self._create_seashell_icon(self.COLORS["recording"])
+        self._processing_icon = self._create_seashell_icon(self.COLORS["processing"])
+        self._translate_icon = self._create_seashell_icon(self.COLORS["translate"])
         # Set initial icon
         self.setIcon(self._normal_icon)
         self.setToolTip("SpeechMate")
         # Setup context menu
         self._setup_menu()
-    def _create_wave_icon(self, color: QColor) -> QIcon:
-        """Create a sound wave icon with the specified color.
+    def _create_seashell_icon(self, color: QColor) -> QIcon:
+        """Create a seashell (conch) icon with the specified color.
         Args:
-            color: The fill color for the wave.
+            color: The fill color for the shell.
         Returns:
-            QIcon with a sound wave design.
+            QIcon with a detailed seashell design.
         """
         pixmap = QPixmap(self.ICON_SIZE, self.ICON_SIZE)
         pixmap.fill(QColor(0, 0, 0, 0))  # Transparent background
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.Antialiasing)
-        painter.setBrush(QBrush(color))
-        painter.setPen(QColor(0, 0, 0, 0))  # No border
-        # Draw sound wave (3 curved lines)
+
+        # Center and sizing
+        center_x = self.ICON_SIZE // 2
         center_y = self.ICON_SIZE // 2
-        margin = 8
-        wave_width = self.ICON_SIZE - 2 * margin
-        # Wave parameters - multiple curved lines to create wave effect
-        pen = QPen(QBrush(color), 3, Qt.SolidLine, Qt.RoundCap)
-        painter.setPen(pen)
-        # Draw three curved wave lines
-        for i in range(3):
-            # Each wave line: curved path from left to right
-            start_x = margin
-            start_y = center_y - 8 + i * 6
-            mid_y = center_y + 4 + i * 4
-            end_x = self.ICON_SIZE - margin
-            end_y = start_y  # End at same height
-            # Draw smooth curve using cubic Bezier
-            path = QPainterPath()
-            path.moveTo(start_x, start_y)
-            # Control points for the curve
-            ctrl1_x = start_x + wave_width * 0.3
-            ctrl1_y = start_y - 4
-            ctrl2_x = start_x + wave_width * 0.7
-            ctrl2_y = end_y + 4
-            path.cubicTo(ctrl1_x, ctrl1_y, ctrl2_x, ctrl2_y, end_x, end_y)
-            painter.drawPath(path)
+        base_radius = self.ICON_SIZE * 0.35
+
+        # Draw the main shell body - spiral shape
+        shell_color = QColor(color)
+        painter.setBrush(QBrush(shell_color))
+        painter.setPen(QColor(0, 0, 0, 0))
+
+        # Create the spiral shell body using multiple overlapping ellipses
+        # This creates the layered, segmented look of a real seashell
+        for i in range(8):
+            # Each segment gets slightly lighter toward the outer edge
+            segment_color = QColor(
+                min(255, color.red() + i * 15),
+                min(255, color.green() + i * 15),
+                min(255, color.blue() + i * 15)
+            )
+            painter.setBrush(QBrush(segment_color))
+
+            # Calculate position and size for each spiral segment
+            angle = i * 0.4  # Spiral angle increment
+            radius = base_radius * (0.3 + i * 0.09)  # Growing radius
+            offset_x = center_x + (i * 3) * 0.8
+            offset_y = center_y - (i * 2) * 0.5
+
+            # Draw elliptical segment
+            seg_width = radius * 1.8
+            seg_height = radius * 1.2
+
+            ellipse_path = QPainterPath()
+            ellipse_path.addEllipse(
+                offset_x - seg_width / 2,
+                offset_y - seg_height / 2,
+                seg_width,
+                seg_height
+            )
+            painter.drawPath(ellipse_path)
+
+        # Add shell texture lines - curved ridges following the spiral
+        painter.setBrush(QBrush(QColor(0, 0, 0, 0)))
+        texture_pen = QPen(QColor(255, 255, 255, 80), 1.5, Qt.SolidLine, Qt.RoundCap)
+        painter.setPen(texture_pen)
+
+        for i in range(6):
+            ridge_angle = i * 0.5
+            ridge_radius = base_radius * (0.4 + i * 0.08)
+            ridge_x = center_x + (i * 4) * 0.6
+            ridge_y = center_y - (i * 2.5) * 0.4
+
+            # Create curved ridge line
+            ridge_path = QPainterPath()
+            start_angle = -0.8 + ridge_angle * 0.3
+            end_angle = 0.8 + ridge_angle * 0.3
+
+            for angle in range(int((end_angle - start_angle) * 20)):
+                t = start_angle + angle * 0.05
+                x = ridge_x + ridge_radius * 1.5 * t
+                y = ridge_y + ridge_radius * 0.8 * (1 - abs(t) * 0.5)
+                if angle == 0:
+                    ridge_path.moveTo(x, y)
+                else:
+                    ridge_path.lineTo(x, y)
+
+            painter.drawPath(ridge_path)
+
+        # Draw the shell opening (aperture) - darker inner area
+        aperture_path = QPainterPath()
+        aperture_x = center_x + self.ICON_SIZE * 0.15
+        aperture_y = center_y + self.ICON_SIZE * 0.1
+        aperture_radius = base_radius * 0.6
+
+        aperture_path.addEllipse(
+            aperture_x - aperture_radius,
+            aperture_y - aperture_radius * 0.7,
+            aperture_radius * 2,
+            aperture_radius * 1.4
+        )
+
+        aperture_color = QColor(color.darker(120))
+        aperture_color.setAlpha(180)
+        painter.setBrush(QBrush(aperture_color))
+        painter.setPen(QColor(0, 0, 0, 0))
+        painter.drawPath(aperture_path)
+
+        # Add highlight for 3D effect
+        highlight_path = QPainterPath()
+        highlight_x = center_x - self.ICON_SIZE * 0.1
+        highlight_y = center_y - self.ICON_SIZE * 0.15
+
+        highlight_path.addEllipse(
+            highlight_x - base_radius * 0.3,
+            highlight_y - base_radius * 0.2,
+            base_radius * 0.6,
+            base_radius * 0.4
+        )
+
+        highlight_color = QColor(255, 255, 255, 100)
+        painter.setBrush(QBrush(highlight_color))
+        painter.drawPath(highlight_path)
+
         painter.end()
         return QIcon(pixmap)
     def _setup_menu(self):
